@@ -47,7 +47,7 @@ router.get('/return', (req, res, next) => {
 
 	// Now we want to take this code and exchange it for Tokens
 	if (typeof req.query.code !== 'undefined' && req.query.code) {
-		PayPal.exchangeCodeForTokens(req.params.code)
+		PayPal.exchangeCodeForTokens(req.query.code)
 			.then((data) => {
 				res.status(200).send(data);
 			})
