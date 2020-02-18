@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+
+  paypal-here:
+    image: 'node:alpine'
+    environment:
+      HTTP_PORT: '3000'
+      CLIENT_ID: ''
+      SECRET: ''
+      REDIRECT_URI: ''
+      SANDBOX: 'true'
+      FORCE_COLOR: 1
+    ports:
+      - '3000:3000'
+    volumes:
+      - '.:/app'
+      - '/etc/localtime:/etc/localtime:ro'
+    working_dir: /app
+    command: node src/index.js
+    restart: unless-stopped
