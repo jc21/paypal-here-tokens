@@ -17,15 +17,29 @@ router.get('/login', (req, res/*, next*/) => {
 		'?response_type=code' +
 		'&client_id=' + encodeURIComponent(config.getClientID()) +
 		'&scope=' + encodeURIComponent('openid email profile address https://uri.paypal.com/services/paypalhere https://uri.paypal.com/services/paypalattributes/business') +
-		'&redirect_uri=' + encodeURIComponent(config.getRedirectURI());
+		'&redirect_uri=' + encodeURIComponent(config.getRedirectURI()) +
+		'&state=' + encodeURIComponent(req.query.state || '');
 
 	if (typeof req.query.follow !== 'undefined') {
-		res.redirect(301, url);
+		res.redirect(302, url);
 	} else {
 		res.status(200).send({
 			url: url,
 		});
 	}
+});
+
+/**
+ * Return URL for Oauth
+ *
+ * GET /oauth/return
+ */
+router.get('/return', (req, res/*, next*/) => {
+	res.status(200).send({
+		body: req.body,
+		params: req.params,
+		query: req.query,
+	});
 });
 
 module.exports = router;
