@@ -113,7 +113,7 @@ const Paypal = {
 		const iv   = Buffer.from(crypto.randomBytes(16), 'binary');
 
 		return new Promise((resolve, reject) => {
-			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha512', function (err, key) {
+			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha1', function (err, key) {
 				if (err) {
 					reject(err)
 					return;
@@ -145,7 +145,7 @@ const Paypal = {
 		cipherText   = cipher.slice(52);
 
 		return new Promise((resolve, reject) => {
-			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, function (err, key) {
+			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha1', function (err, key) {
 				if (err) {
 					reject(err);
 					return;
@@ -156,7 +156,7 @@ const Paypal = {
 				const hmacgen = Buffer.from(crypto.createHmac('sha1', hashKey).update(cipherText).digest('binary'), 'binary');
 
 				if (hmacgen.toString('base64') !== hmac.toString('base64')) {
-					rejcet(new Error('HMAC Mismatch!'));
+					reject(new Error('HMAC Mismatch!'));
 					return;
 				}
 
