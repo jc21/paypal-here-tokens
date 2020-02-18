@@ -13,6 +13,7 @@
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "express": "^4.17.1",
+    "node": "^13.0.0",
     "signale": "^1.4.0"
   },
   "signale": {

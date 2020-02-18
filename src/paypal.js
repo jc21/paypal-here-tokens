@@ -75,7 +75,8 @@ const Paypal = {
 					config.getRefreshURI() + '?token=' + encodeURIComponent(encrypted)
 				];
 
-				const encodedToken = encodeURIComponent(new Buffer(JSON.stringify(tokenInformation)).toString('base64'));
+				const buf          = Buffer.from(JSON.stringify(tokenInformation));
+				const encodedToken = encodeURIComponent(buf.toString('base64'));
 
 				return (config.isSandboxMode() ? 'sandbox' : 'live') + ':' + encodedToken;
 			});
@@ -85,12 +86,11 @@ const Paypal = {
 	 * Encrypt tokens with the Server ID
 	 *
 	 * @param   {string} plainText
-	 * @param   {string} password
 	 * @returns {Promise}
 	 */
 	encrypt: function (plainText) {
-		var salt = new Buffer(crypto.randomBytes(16), 'binary');
-		var iv   = new Buffer(crypto.randomBytes(16), 'binary');
+		const salt = Buffer.from(crypto.randomBytes(16), 'binary');
+		const iv   = Buffer.from(crypto.randomBytes(16), 'binary');
 
 		return new Promise((resolve, reject) => {
 			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha512', function (err, key) {
@@ -100,44 +100,51 @@ const Paypal = {
 				}
 
 				const cipher  = crypto.createCipheriv('aes-256-cbc', key, iv);
-				let buffer    = new Buffer(cipher.update(plainText, 'utf8', 'binary'), 'binary');
-				buffer        = Buffer.concat([buffer, new Buffer(cipher.final('binary'), 'binary')]);
+				let buf       = Buffer.from(cipher.update(plainText, 'utf8', 'binary'), 'binary');
+				buf           = Buffer.concat([buf, Buffer.from(cipher.final('binary'), 'binary')]);
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
-				const hmac    = new Buffer(crypto.createHmac('sha1', hashKey).update(buffer).digest('binary'), 'binary');
+				const hmac    = Buffer.from(crypto.createHmac('sha1', hashKey).update(buffer).digest('binary'), 'binary');
+				buf           = Buffer.concat([salt, iv, hmac, buf]);
 
-				buffer = Buffer.concat([salt, iv, hmac, buffer]);
-				resolve(buffer.toString('base64'));
+				resolve(buf.toString('base64'));
 			});
 		});
 	},
 
+	/**
+	 * Decrypt token with the Server ID
+	 *
+	 * @param   {string} plainText
+	 * @returns {Promise}
+	 */
+	decrypt: function (cipherText) {
+		const cipher = Buffer.from(cipherText, 'base64');
+		const salt   = cipher.slice(0, 16);
+		const iv     = cipher.slice(16, 32);
+		const hmac   = cipher.slice(32, 52);
+		cipherText   = cipher.slice(52);
 
-	decrypt: function (cipherText, password, cb) {
-		var cipher = new Buffer(cipherText, 'base64');
+		return new Promise((resolve, reject) => {
+			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, function (err, key) {
+				if (err) {
+					reject(err);
+					return;
+				}
 
-		var salt = cipher.slice(0, 16);
-		var iv = cipher.slice(16, 32);
-		var hmac = cipher.slice(32, 52);
-		cipherText = cipher.slice(52);
+				const cipher  = crypto.createDecipheriv('aes-256-cbc', key, iv);
+				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
+				const hmacgen = Buffer.from(crypto.createHmac('sha1', hashKey).update(cipherText).digest('binary'), 'binary');
 
-		crypto.pbkdf2(password, salt, 1000, 32, function (err, key) {
-			if (err) {
-				logger.error('Failed to generate key.', err);
-				cb(err, null);
-				return;
-			}
-			var cipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+				if (hmacgen.toString('base64') !== hmac.toString('base64')) {
+					rejcet(new Error('HMAC Mismatch!'));
+					return;
+				}
 
-			// Verify the HMAC first
-			var hashKey = crypto.createHash('sha1').update(key).digest('binary');
-			var hmacgen = new Buffer(crypto.createHmac('sha1', hashKey).update(cipherText).digest('binary'), 'binary');
-			if (hmacgen.toString('base64') !== hmac.toString('base64')) {
-				cb(new Error('HMAC Mismatch!'), null);
-				return;
-			}
-			var buffer = new Buffer(cipher.update(cipherText), 'binary');
-			buffer = Buffer.concat([buffer, new Buffer(cipher.final('binary'))]);
-			cb(null, buffer.toString('utf8'), key);
+				let buf = Buffer.from(cipher.update(cipherText), 'binary');
+				buf = Buffer.concat([buf, Buffer.from(cipher.final('binary'))]);
+
+				resolve([buf.toString('utf8'), key]);
+			});
 		});
 	}
 
