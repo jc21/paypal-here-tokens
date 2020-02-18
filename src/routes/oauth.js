@@ -41,7 +41,7 @@ router.get('/return', (req, res, next) => {
 
 	// Check for errors from Paypal
 	if (req.query.error) {
-		next(new Error(util.format('Login with PayPal Error! %s: %s', req.query.error, req.query.error_description)));
+		next(new Error(`Login with PayPal Error! ${req.query.error}: ${req.query.error_description}`));
 		return
 	}
 
@@ -74,11 +74,13 @@ router.get('/return', (req, res, next) => {
  * GET /oauth/refresh
  */
 router.get('/refresh', (req, res, next) => {
-	res.status(200).send({
-		body:   req.body,
-		params: req.params,
-		query:  req.query,
-	});
+	logger.debug('Paypal Refresh URI Hit:', req.originalUrl);
+
+	PayPal.refreshFromToken(req.query.token)
+		.then((data) => {
+			res.status(200).send(data);
+		})
+		.catch(next);
 });
 
 module.exports = router;

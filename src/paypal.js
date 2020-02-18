@@ -83,6 +83,26 @@ const Paypal = {
 	},
 
 	/**
+	 * This function takes an initializeToken from exchangeCodeForTokens/generateInitializeToken
+	 * and decodes it, requests a new valid token from PayPal and sends it back for the PayPal Here
+	 * SDK to continue moving. It depends on the ServerID being the same as it was when the
+	 * initializeToken was genererated. If it's not the same, expect errors
+	 *
+	 * @param   {string} token
+	 * @returns {Promise}
+	 */
+	refreshFromToken: function (token) {
+		return new Promise((resolve, reject) => {
+			if (typeof token === 'undefined' || !token) {
+				reject(new Error('Token was not supplied'));
+				return
+			} else {
+				resolve(Paypal.decrypt(token));
+			}
+		});
+	},
+
+	/**
 	 * Encrypt tokens with the Server ID
 	 *
 	 * @param   {string} plainText
