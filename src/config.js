@@ -20,7 +20,7 @@ const config = {
 	 * @returns {string}
 	 */
 	getRedirectURI: function () {
-		return process.env.getRedirectURI || '';
+		return process.env.REDIRECT_URI || '';
 	},
 
 	/**
