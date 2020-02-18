@@ -93,16 +93,15 @@ const Paypal = {
 		var iv   = new Buffer(crypto.randomBytes(16), 'binary');
 
 		return new Promise((resolve, reject) => {
-			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, function (err, key) {
+			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha512', function (err, key) {
 				if (err) {
 					reject(err)
 					return;
 				}
 
-				const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-				let buffer   = new Buffer(cipher.update(plainText, 'utf8', 'binary'), 'binary');
-				buffer = Buffer.concat([buffer, new Buffer(cipher.final('binary'), 'binary')]);
-
+				const cipher  = crypto.createCipheriv('aes-256-cbc', key, iv);
+				let buffer    = new Buffer(cipher.update(plainText, 'utf8', 'binary'), 'binary');
+				buffer        = Buffer.concat([buffer, new Buffer(cipher.final('binary'), 'binary')]);
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
 				const hmac    = new Buffer(crypto.createHmac('sha1', hashKey).update(buffer).digest('binary'), 'binary');
 
