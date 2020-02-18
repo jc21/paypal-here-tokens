@@ -103,7 +103,7 @@ const Paypal = {
 				let buf       = Buffer.from(cipher.update(plainText, 'utf8', 'binary'), 'binary');
 				buf           = Buffer.concat([buf, Buffer.from(cipher.final('binary'), 'binary')]);
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
-				const hmac    = Buffer.from(crypto.createHmac('sha1', hashKey).update(buffer).digest('binary'), 'binary');
+				const hmac    = Buffer.from(crypto.createHmac('sha1', hashKey).update(buf).digest('binary'), 'binary');
 				buf           = Buffer.concat([salt, iv, hmac, buf]);
 
 				resolve(buf.toString('base64'));
