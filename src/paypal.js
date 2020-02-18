@@ -109,7 +109,7 @@ const Paypal = {
 				buffer = Buffer.concat([salt, iv, hmac, buffer]);
 				resolve(buffer.toString('base64'));
 			});
-		}
+		});
 	},
 
 
