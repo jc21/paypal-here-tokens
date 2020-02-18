@@ -5,6 +5,13 @@ const config = {
 	/**
 	 * @returns {string}
 	 */
+	getServerID: function () {
+		return process.env.SERVER_ID || '';
+	},
+
+	/**
+	 * @returns {string}
+	 */
 	getClientID: function () {
 		return process.env.CLIENT_ID || '';
 	},
@@ -38,17 +45,22 @@ const config = {
 	check: function () {
 		let exit = false;
 		// Check for required environment variables
-		if (typeof process.env.CLIENT_ID === 'undefined' || process.env.CLIENT_ID == '') {
+		if (!config.getServerID()) {
 			logger.error('CLIENT_ID env variable was not specified');
 			exit = true;
 		}
 
-		if (typeof process.env.SECRET === 'undefined' || process.env.SECRET == '') {
+		if (!config.getClientID()) {
+			logger.error('CLIENT_ID env variable was not specified');
+			exit = true;
+		}
+
+		if (!config.getSecret()) {
 			logger.error('SECRET env variable was not specified');
 			exit = true;
 		}
 
-		if (typeof process.env.REDIRECT_URI === 'undefined' || process.env.REDIRECT_URI == '') {
+		if (!config.getRedirectURI()) {
 			logger.error('REDIRECT_URI env variable was not specified');
 			exit = true;
 		}

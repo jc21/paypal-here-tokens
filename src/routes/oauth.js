@@ -1,5 +1,7 @@
 const express = require('express');
-const config   = require('../config');
+const config  = require('../config');
+const logger  = require('../logger').express;
+const PayPal  = require('../paypal');
 
 let router = express.Router({
 	caseSensitive: true,
@@ -34,12 +36,30 @@ router.get('/login', (req, res/*, next*/) => {
  *
  * GET /oauth/return
  */
-router.get('/return', (req, res/*, next*/) => {
-	res.status(200).send({
-		body: req.body,
-		params: req.params,
-		query: req.query,
-	});
+router.get('/return', (req, res, next) => {
+	logger.debug('Paypal Redirect URI Hit:', req.originalUrl);
+
+	// Check for errors from Paypal
+	if (query.error) {
+		next(new Error(util.format('Login with PayPal Error! %s: %s', query.error, query.error_description)));
+		return
+	}
+
+	// Now we want to take this code and exchange it for Tokens
+	if (typeof req.query.code !== 'undefined' && req.query.code) {
+		PayPal.exchangeCodeForTokens(req.params.code)
+			.then((data) => {
+				res.status(200).send(data);
+			})
+			.catch(next);
+
+	} else {
+		res.status(200).send({
+			body: req.body,
+			params: req.params,
+			query: req.query,
+		});
+	}
 });
 
 module.exports = router;
