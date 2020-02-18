@@ -1,4 +1,4 @@
-const restler = require('@jc21/reslter');
+const restler = require('@jc21/restler');
 const config  = require('./config');
 const logger  = require('./logger').paypal;
 
