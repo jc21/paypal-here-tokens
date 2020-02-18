@@ -34,8 +34,7 @@ router.get('/', (req, res/*, next*/) => {
 			major:    parseInt(version.shift(), 10),
 			minor:    parseInt(version.shift(), 10),
 			revision: parseInt(version.shift(), 10)
-		},
-		env: process.env
+		}
 	});
 });
 

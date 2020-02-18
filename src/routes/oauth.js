@@ -19,9 +19,13 @@ router.get('/login', (req, res/*, next*/) => {
 		'&scope=' + encodeURIComponent('openid email profile address https://uri.paypal.com/services/paypalhere https://uri.paypal.com/services/paypalattributes/business') +
 		'&redirect_uri=' + encodeURIComponent(config.getRedirectURI());
 
-	res.status(200).send({
-		url: url,
-	});
+	if (typeof req.query.follow !== 'undefined') {
+		res.redirect(301, url);
+	} else {
+		res.status(200).send({
+			url: url,
+		});
+	}
 });
 
 module.exports = router;
