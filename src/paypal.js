@@ -113,11 +113,14 @@ const Paypal = {
 		const iv   = Buffer.from(crypto.randomBytes(16), 'binary');
 
 		return new Promise((resolve, reject) => {
+			logger.debug('ENC ID: ', config.getServerID());
 			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha1', function (err, key) {
 				if (err) {
 					reject(err)
 					return;
 				}
+
+				logger.debug('ENC KEY:', key.toString('base64'));
 
 				const cipher  = crypto.createCipheriv('aes-256-cbc', key, iv);
 				let buf       = Buffer.from(cipher.update(plainText, 'utf8', 'binary'), 'binary');
@@ -125,6 +128,11 @@ const Paypal = {
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
 				const hmac    = Buffer.from(crypto.createHmac('sha1', hashKey).update(buf).digest('binary'), 'binary');
 				buf           = Buffer.concat([salt, iv, hmac, buf]);
+
+				logger.debug('ENC CIPHER: ', cipher.toString('base64'));
+				logger.debug('ENC SALT:   ', salt.toString('base64'));
+				logger.debug('ENC IV:     ', iv.toString('base64'));
+				logger.debug('ENC HMAC:   ', hmac.toString('base64'));
 
 				resolve(buf.toString('base64'));
 			});
@@ -144,18 +152,28 @@ const Paypal = {
 		const hmac   = cipher.slice(32, 52);
 		cipherText   = cipher.slice(52);
 
+		logger.debug('DEC CIPHER: ', cipher.toString('base64'));
+		logger.debug('DEC SALT:   ', salt.toString('base64'));
+		logger.debug('DEC IV:     ', iv.toString('base64'));
+		logger.debug('DEC HMAC:   ', hmac.toString('base64'));
+
 		return new Promise((resolve, reject) => {
+			logger.debug('DEC ID: ', config.getServerID());
 			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha1', function (err, key) {
 				if (err) {
 					reject(err);
 					return;
 				}
 
+				logger.debug('DEC KEY:', key.toString('base64'));
+
 				const cipher  = crypto.createDecipheriv('aes-256-cbc', key, iv);
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
 				const hmacgen = Buffer.from(crypto.createHmac('sha1', hashKey).update(cipherText).digest('binary'), 'binary');
+				logger.debug('DEC HMACGEN:', hmacgen.toString('base64'));
 
 				if (hmacgen.toString('base64') !== hmac.toString('base64')) {
+
 					reject(new Error('HMAC Mismatch!'));
 					return;
 				}
