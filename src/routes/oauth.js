@@ -40,8 +40,8 @@ router.get('/return', (req, res, next) => {
 	logger.debug('Paypal Redirect URI Hit:', req.originalUrl);
 
 	// Check for errors from Paypal
-	if (query.error) {
-		next(new Error(util.format('Login with PayPal Error! %s: %s', query.error, query.error_description)));
+	if (req.query.error) {
+		next(new Error(util.format('Login with PayPal Error! %s: %s', req.query.error, req.query.error_description)));
 		return
 	}
 
