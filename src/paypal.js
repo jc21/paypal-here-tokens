@@ -18,7 +18,7 @@ const Paypal = {
 				reject(new Error('Code was empty'));
 			} else {
 				restler
-					.get(url, {
+					.post(url, {
 						username: config.getClientID(),
 						password: config.getSecret(),
 						headers: {
@@ -32,13 +32,12 @@ const Paypal = {
 					})
 					.on('complete', function(data, response) {
 						logger.debug('exchangeCodeForTokens data:', data);
-						logger.debug('exchangeCodeForTokens response:', response);
 
 						if (data instanceof Error) {
 							reject(data);
 						} else if (response.statusCode != 200) {
-							if (typeof data === 'object' && typeof data.error === 'object' && typeof data.error.message !== 'undefined') {
-								reject(new Error(data.error.code + ': ' + data.error.message));
+							if (typeof data === 'object' && typeof data.error !== 'undefined' && typeof data.error_description !== 'undefined') {
+								reject(new Error(data.error + ': ' + data.error_description));
 							} else {
 								reject(new Error('Error ' + response.statusCode));
 							}
