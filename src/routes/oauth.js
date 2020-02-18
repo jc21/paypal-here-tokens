@@ -49,17 +49,36 @@ router.get('/return', (req, res, next) => {
 	if (typeof req.query.code !== 'undefined' && req.query.code) {
 		PayPal.exchangeCodeForTokens(req.query.code)
 			.then((data) => {
+				return PayPal.generateInitializeToken(data)
+					.then((initToken) => {
+						data.initializeToken = initToken;
+						return data;
+					});
+			})
+			.then((data) => {
 				res.status(200).send(data);
 			})
 			.catch(next);
-
 	} else {
 		res.status(200).send({
-			body: req.body,
+			body:   req.body,
 			params: req.params,
-			query: req.query,
+			query:  req.query,
 		});
 	}
+});
+
+/**
+ * Refresh endpoint used by Paypal Here SDK to get fresh access tokens
+ *
+ * GET /oauth/refresh
+ */
+router.get('/refresh', (req, res, next) => {
+	res.status(200).send({
+		body:   req.body,
+		params: req.params,
+		query:  req.query,
+	});
 });
 
 module.exports = router;

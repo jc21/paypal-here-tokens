@@ -5,6 +5,13 @@ const config = {
 	/**
 	 * @returns {string}
 	 */
+	getRootURL: function () {
+		return (process.env.ROOT_URL || '').trimRight('/');
+	},
+
+	/**
+	 * @returns {string}
+	 */
 	getServerID: function () {
 		return process.env.SERVER_ID || '';
 	},
@@ -27,7 +34,14 @@ const config = {
 	 * @returns {string}
 	 */
 	getRedirectURI: function () {
-		return process.env.REDIRECT_URI || '';
+		return config.getRootURL() + '/oauth/return';
+	},
+
+	/**
+	 * @returns {string}
+	 */
+	getRefreshURI: function () {
+		return config.getRootURL() + '/oauth/refresh';
 	},
 
 	/**
@@ -45,6 +59,11 @@ const config = {
 	check: function () {
 		let exit = false;
 		// Check for required environment variables
+		if (!config.getRootURL()) {
+			logger.error('ROOT_URL env variable was not specified');
+			exit = true;
+		}
+
 		if (!config.getServerID()) {
 			logger.error('CLIENT_ID env variable was not specified');
 			exit = true;
@@ -57,11 +76,6 @@ const config = {
 
 		if (!config.getSecret()) {
 			logger.error('SECRET env variable was not specified');
-			exit = true;
-		}
-
-		if (!config.getRedirectURI()) {
-			logger.error('REDIRECT_URI env variable was not specified');
 			exit = true;
 		}
 

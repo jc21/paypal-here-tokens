@@ -26,10 +26,11 @@ router.get('/', (req, res/*, next*/) => {
 	let version = pjson.version.split('-').shift().split('.');
 
 	res.status(200).send({
-		status:    'OK',
-		sandbox:   config.isSandboxMode(),
-		client_id: config.getClientID(),
+		status:       'OK',
+		sandbox:      config.isSandboxMode(),
+		client_id:    config.getClientID(),
 		redirect_uri: config.getRedirectURI(),
+		refresh_uri:  config.getRefreshURI(),
 		version: {
 			major:    parseInt(version.shift(), 10),
 			minor:    parseInt(version.shift(), 10),

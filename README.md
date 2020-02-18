@@ -6,13 +6,19 @@ This is an OAuth site for handling PayPal Here first party authorizations.
 ## Environment Variables
 
 | Variable        | Default       | Required | Description
-| --------------- | ------------- | -------- | ---------------------------- |
-| SERVER_ID       |               | yes      | A unique ID for this server  |
-| CLIENT_ID       |               | yes      | The OAuth Client ID          |
-| SECRET          |               | yes      | The OAuth Secret             |
-| REDIRECT_URI    |               | yes      | The redirect URI             |
-| SANDBOX         | false         | no       | Is this a Sandbox deployment |
-| HTTP_PORT       | 3000          | no       | Web server port              |
+| --------------- | ------------- | -------- | ------------------------------- |
+| SERVER_ID       |               | yes      | A unique ID for this server     |
+| CLIENT_ID       |               | yes      | The OAuth Client ID             |
+| SECRET          |               | yes      | The OAuth Secret                |
+| ROOT_URL        |               | yes      | The hosted root of this service |
+| SANDBOX         | false         | no       | Is this a Sandbox deployment    |
+| HTTP_PORT       | 3000          | no       | Web server port                 |
+
+
+## Root URL
+
+This service needs to know where it's publicly hosted. For example: `https://paypal-here.example.com`
+or if this is hosted as a sub-path: `https://example.com/paypal-here`
 
 
 ## Server ID
@@ -29,8 +35,9 @@ of them, change the server id.
 When you created the OAuth App, you had to specify a Redirect URI. It should point directly to this
 microservice on the `/oath/return` endpoint. IE:
 
-`https://example.com/oauth/return`
+`https://paypal-here.example.com/oauth/return`
+or
+`https://example.com/paypal-here/oauth/return`
 
-This entire path needs to be specified in the `REDIRECT_URI` env variable and it must match
-the value you used in your OAuth app.
-
+Viewing the root `/` of this service will give you some parameters that you should use in your
+oauth app setup.

@@ -5,10 +5,10 @@ services:
   paypal-here:
     image: 'node:alpine'
     environment:
+      ROOT_URL: ''
       SERVER_ID: ''
       CLIENT_ID: ''
       SECRET: ''
-      REDIRECT_URI: ''
       SANDBOX: 'true'
       FORCE_COLOR: 1
     ports:
