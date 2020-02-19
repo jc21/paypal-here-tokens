@@ -19,6 +19,7 @@ app.set('json spaces', 2);
  * Routes
  */
 app.use('/oauth', require('./routes/oauth'));
+app.use('/debug', require('./routes/debug'));
 app.use('/', require('./routes'));
 
 /**

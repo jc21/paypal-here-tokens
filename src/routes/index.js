@@ -40,6 +40,16 @@ router.get('/', (req, res/*, next*/) => {
 });
 
 /**
+ * Swagger schema
+ *
+ * GET /schema
+ */
+router.get('/schema', (req, res/*, next*/) => {
+	const swagger = require('../../doc/swagger.json');
+	res.status(200).send(swagger);
+});
+
+/**
  * API 404 for all other routes
  *
  * ALL /api/*

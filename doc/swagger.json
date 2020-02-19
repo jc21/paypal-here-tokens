@@ -1,0 +1,290 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "PayPal Here Tokens API",
+		"version": "base"
+	},
+	"paths": {
+		"/": {
+			"get": {
+				"operationId": "Health",
+				"summary": "Returns the health",
+				"tags": [
+					"public"
+				],
+				"responses": {
+					"200": {
+						"description": "200 response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"additionalProperties": false,
+									"properties": {
+										"result": {
+											"type": "object",
+											"additionalProperties": false,
+											"required": [
+												"status",
+												"sandbox",
+												"client_id",
+												"redirect_uri",
+												"refresh_uri",
+												"version"
+											],
+											"properties": {
+												"status": {
+													"type": "string",
+													"description": "Health Status",
+													"example": "OK",
+													"minLength": 2
+												},
+												"sandbox": {
+													"type": "boolean",
+													"description": "Sandbox mode?",
+													"example": true
+												},
+												"client_id": {
+													"type": "string",
+													"description": "OAuth client ID",
+													"example": "Aacc-_yEohf2UNTAtLXdC_dFBO...VKJ3dRswvyiy8QZG4X5",
+													"minLength": 10
+												},
+												"redirect_uri": {
+													"type": "string",
+													"description": "The Redirect URI you should use",
+													"example": "https://paypal-here.example.com/oauth/return",
+													"minLength": 10
+												},
+												"refresh_uri": {
+													"type": "string",
+													"description": "The refresh URI you should use",
+													"example": "https://paypal-here.example.com/oauth/refresh",
+													"minLength": 10
+												},
+												"version": {
+													"type": "object",
+													"description": "API Version",
+													"example": {
+														"major": 1,
+														"minor": 0,
+														"revision": 0
+													},
+													"required": [
+														"major",
+														"minor",
+														"revision"
+													],
+													"additionalProperties": false,
+													"properties": {
+														"major": {
+															"type": "integer",
+															"minimum": 0
+														},
+														"minor": {
+															"type": "integer",
+															"minimum": 0
+														},
+														"revision": {
+															"type": "integer",
+															"minimum": 0
+														}
+													}
+												}
+											}
+										},
+										"error": {
+											"$ref": "#/components/schemas/Error"
+										}
+									}
+								},
+								"examples": {
+									"default": {
+										"value": {
+											"status": "OK",
+											"sandbox": true,
+											"client_id": "Aacc-_yEohf2UNTAtLXdC_dFBO...VKJ3dRswvyiy8QZG4X5",
+											"redirect_uri": "https://paypal-here.example.com/oauth/return",
+											"refresh_uri": "https://paypal-here.example.com/oauth/refresh",
+											"version": {
+												"major": 1,
+												"minor": 0,
+												"revision": 0
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/schema": {
+			"get": {
+				"operationId": "schema",
+				"summary": "Returns this schema file",
+				"tags": [
+					"public"
+				],
+				"responses": {
+					"200": {
+						"description": "200 response"
+					}
+				}
+			}
+		},
+		"/oauth/login": {
+			"get": {
+				"operationId": "oauthLogin",
+				"summary": "Gets or redirects to the PayPal OAuth Login Page for this App",
+				"tags": [
+					"OAuth"
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "follow",
+						"schema": {
+							"type": "boolean"
+						},
+						"required": false,
+						"description": "If set, endpoint will return a 302 instead of the login url data",
+						"example": true
+					},
+					{
+						"in": "query",
+						"name": "state",
+						"schema": {
+							"type": "string"
+						},
+						"required": false,
+						"description": "If set, state will pass through login flow back to the return API",
+						"example": "something"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "200 response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"description": "Login URL response",
+									"additionalProperties": false,
+									"required": [
+										"url"
+									],
+									"properties": {
+										"url": {
+											"type": "string",
+											"minLength": 10
+										}
+									}
+								},
+								"examples": {
+									"default": {
+										"value": {
+											"url": "https://www.sandbox.paypal.com/connect?response_type=code&client_id=Aacc-_yEohf2UNTAtLXdC_dFBOxTtF5CWyvxbg_mX4-xFIZk1T-yww4QNlOoIVKJ3dRswvyiy8QZG4X5&scope=openid%20email%20profile%20address%20https%3A%2F%2Furi.paypal.com%2Fservices%2Fpaypalhere%20https%3A%2F%2Furi.paypal.com%2Fservices%2Fpaypalattributes%2Fbusiness&redirect_uri=https%3A%2F%2Fpaypal-here.example.com%2Foauth%2Freturn&state="
+										}
+									}
+								}
+							}
+						}
+					},
+					"302": {
+						"description": "302 response"
+					}
+				}
+			}
+		},
+		"/oauth/return": {
+			"get": {
+				"operationId": "oauthReturn",
+				"summary": "Return endpoint for OAuth flow",
+				"tags": [
+					"OAuth"
+				],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "follow",
+						"schema": {
+							"type": "boolean"
+						},
+						"required": false,
+						"description": "If set, endpoint will return a 302 instead of the login url data",
+						"example": true
+					},
+					{
+						"in": "query",
+						"name": "state",
+						"schema": {
+							"type": "string"
+						},
+						"required": false,
+						"description": "If set, state will pass through login flow back to the return API",
+						"example": "something"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "200 response",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"description": "Login URL response",
+									"additionalProperties": false,
+									"required": [
+										"url"
+									],
+									"properties": {
+										"url": {
+											"type": "string",
+											"minLength": 10
+										}
+									}
+								},
+								"examples": {
+									"default": {
+										"value": {
+											"url": "https://www.sandbox.paypal.com/connect?response_type=code&client_id=Aacc-_yEohf2UNTAtLXdC_dFBOxTtF5CWyvxbg_mX4-xFIZk1T-yww4QNlOoIVKJ3dRswvyiy8QZG4X5&scope=openid%20email%20profile%20address%20https%3A%2F%2Furi.paypal.com%2Fservices%2Fpaypalhere%20https%3A%2F%2Furi.paypal.com%2Fservices%2Fpaypalattributes%2Fbusiness&redirect_uri=https%3A%2F%2Fpaypal-here.example.com%2Foauth%2Freturn&state="
+										}
+									}
+								}
+							}
+						}
+					},
+					"302": {
+						"description": "302 response"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Error": {
+				"type": "object",
+				"description": "Error object",
+				"additionalProperties": false,
+				"required": [
+					"code",
+					"message"
+				],
+				"properties": {
+					"code": {
+						"type": "integer",
+						"description": "Error code",
+						"minimum": 0
+					},
+					"message": {
+						"type": "string",
+						"description": "Error message"
+					}
+				}
+			}
+		}
+	}
+}

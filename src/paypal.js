@@ -3,7 +3,7 @@ const crypto  = require('crypto');
 const config  = require('./config');
 const logger  = require('./logger').paypal;
 
-const Paypal = {
+const PayPal = {
 
 	/**
 	 * Exchanges a Oauth callback code for Tokens
@@ -12,14 +12,12 @@ const Paypal = {
 	 * @returns {Promise}
 	 */
 	exchangeCodeForTokens: function (code) {
-		const url = 'https://api' + (config.isSandboxMode() ? '.sandbox' : '') + '.paypal.com/v1/identity/openidconnect/tokenservice';
-
 		return new Promise((resolve, reject) => {
 			if (!code) {
 				reject(new Error('Code was empty'));
 			} else {
 				restler
-					.post(url, {
+					.post(PayPal.getTokenServiceURL(), {
 						username: config.getClientID(),
 						password: config.getSecret(),
 						headers: {
@@ -67,7 +65,7 @@ const Paypal = {
 	generateInitializeToken: function (data) {
 		const env = config.isSandboxMode() ? 'sandbox' : 'live';
 
-		return Paypal.encrypt(JSON.stringify([env, data.refresh_token]))
+		return PayPal.encrypt(JSON.stringify([env, data.refresh_token]))
 			.then((encrypted) => {
 				const tokenInformation = [
 					data.access_token,
@@ -83,8 +81,32 @@ const Paypal = {
 	},
 
 	/**
-	 * This function takes an initializeToken from exchangeCodeForTokens/generateInitializeToken
-	 * and decodes it, requests a new valid token from PayPal and sends it back for the PayPal Here
+	 * This is a helper function that takes the token from generateInitializeToken
+	 * and returns the base64 decrypted array
+	 *
+	 * @param   {string} token
+	 * @returns {object}
+	 */
+	decodeInitializeToken: function (token) {
+		const parts = token.split(':', 2);
+		const buf = Buffer.from(parts[1], 'base64');
+		const data = JSON.parse(buf.toString('utf8'));
+
+		let refreshToken = '';
+		if (typeof data[2] !== 'undefined') {
+			// Get fresh token from the url
+			const urlparts = data[2].split('token=');
+			refreshToken = urlparts.pop();
+		}
+
+		return {
+			data:          data,
+			refresh_token: refreshToken,
+		};
+	},
+
+	/**
+	 * This function takes an encoded refreshToken and decodes it, requests a new valid token from PayPal and sends it back for the PayPal Here
 	 * SDK to continue moving. It depends on the ServerID being the same as it was when the
 	 * initializeToken was genererated. If it's not the same, expect errors
 	 *
@@ -97,8 +119,47 @@ const Paypal = {
 				reject(new Error('Token was not supplied'));
 				return
 			} else {
-				resolve(Paypal.decrypt(token));
+				resolve(PayPal.decrypt(token));
 			}
+		})
+		.then((data) => {
+			// data: json encoded string of the "[env,refresh_token]"
+			const info = JSON.parse(data);
+
+			// The first item is the env, so let's make sure it matches that which we're configured to use
+			if ((config.isSandboxMode() && info[0] !== 'sandbox') || !config.isSandboxMode() && info[0] == 'live') {
+				throw new Error('Invalid environment for this instance: ' + info[0]);
+			}
+
+			return new Promise((resolve, reject) => {
+				restler
+					.post(PayPal.getTokenServiceURL(), {
+						username: config.getClientID(),
+						password: config.getSecret(),
+						headers: {
+							Accept: 'application/json',
+						},
+						data: {
+							grant_type:    'refresh_token',
+							refresh_token: info[1],
+						},
+					})
+					.on('complete', function(data, response) {
+						logger.debug('refreshFromToken data:', data);
+
+						if (data instanceof Error) {
+							reject(data);
+						} else if (response.statusCode != 200) {
+							if (typeof data === 'object' && typeof data.error !== 'undefined' && typeof data.error_description !== 'undefined') {
+								reject(new Error(data.error + ': ' + data.error_description));
+							} else {
+								reject(new Error('Error ' + response.statusCode));
+							}
+						} else {
+							resolve(data);
+						}
+					});
+			});
 		});
 	},
 
@@ -113,14 +174,11 @@ const Paypal = {
 		const iv   = Buffer.from(crypto.randomBytes(16), 'binary');
 
 		return new Promise((resolve, reject) => {
-			logger.debug('ENC ID: ', config.getServerID());
 			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha1', function (err, key) {
 				if (err) {
 					reject(err)
 					return;
 				}
-
-				logger.debug('ENC KEY:', key.toString('base64'));
 
 				const cipher  = crypto.createCipheriv('aes-256-cbc', key, iv);
 				let buf       = Buffer.from(cipher.update(plainText, 'utf8', 'binary'), 'binary');
@@ -128,11 +186,6 @@ const Paypal = {
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
 				const hmac    = Buffer.from(crypto.createHmac('sha1', hashKey).update(buf).digest('binary'), 'binary');
 				buf           = Buffer.concat([salt, iv, hmac, buf]);
-
-				logger.debug('ENC CIPHER: ', cipher.toString('base64'));
-				logger.debug('ENC SALT:   ', salt.toString('base64'));
-				logger.debug('ENC IV:     ', iv.toString('base64'));
-				logger.debug('ENC HMAC:   ', hmac.toString('base64'));
 
 				resolve(buf.toString('base64'));
 			});
@@ -152,28 +205,18 @@ const Paypal = {
 		const hmac   = cipher.slice(32, 52);
 		cipherText   = cipher.slice(52);
 
-		logger.debug('DEC CIPHER: ', cipher.toString('base64'));
-		logger.debug('DEC SALT:   ', salt.toString('base64'));
-		logger.debug('DEC IV:     ', iv.toString('base64'));
-		logger.debug('DEC HMAC:   ', hmac.toString('base64'));
-
 		return new Promise((resolve, reject) => {
-			logger.debug('DEC ID: ', config.getServerID());
 			crypto.pbkdf2(config.getServerID(), salt, 1000, 32, 'sha1', function (err, key) {
 				if (err) {
 					reject(err);
 					return;
 				}
 
-				logger.debug('DEC KEY:', key.toString('base64'));
-
 				const cipher  = crypto.createDecipheriv('aes-256-cbc', key, iv);
 				const hashKey = crypto.createHash('sha1').update(key).digest('binary');
 				const hmacgen = Buffer.from(crypto.createHmac('sha1', hashKey).update(cipherText).digest('binary'), 'binary');
-				logger.debug('DEC HMACGEN:', hmacgen.toString('base64'));
 
 				if (hmacgen.toString('base64') !== hmac.toString('base64')) {
-
 					reject(new Error('HMAC Mismatch!'));
 					return;
 				}
@@ -181,11 +224,20 @@ const Paypal = {
 				let buf = Buffer.from(cipher.update(cipherText), 'binary');
 				buf = Buffer.concat([buf, Buffer.from(cipher.final('binary'))]);
 
-				resolve([buf.toString('utf8'), key]);
+				resolve(buf.toString('utf8'));
 			});
 		});
+	},
+
+	/**
+	 * Constructs a token service API URL for the configured env
+	 *
+	 * @returns {string}
+	 */
+	getTokenServiceURL: function () {
+		return 'https://api' + (config.isSandboxMode() ? '.sandbox' : '') + '.paypal.com/v1/identity/openidconnect/tokenservice';
 	}
 
 };
 
-module.exports = Paypal;
+module.exports = PayPal;
